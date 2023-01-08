@@ -4,6 +4,7 @@ const contendorCarrito = document.querySelector('#lista-carrito tbody');
 const vaciarCarritoBtn = document.querySelector('#vaciar-carrito');
 const listaCursos = document.querySelector('#lista-cursos');
 const countSpan = document.querySelector('.count');
+const fragment = document.createDocumentFragment();
 let articulosCarrito = [];
 
 cargarEventListeners();
@@ -46,14 +47,12 @@ function eliminarCurso(e) {
 
     // Elimina del arreglo de articulosCarrito por el data-id
     articulosCarrito = articulosCarrito.filter((curso) => curso.id !== cursoId);
-    carritoHTML(); // Iterar sobre el carrito y mostrar su HTML
+    carritoHTML();
   }
 }
 
 // Lee el contendio del HTML al que le dimos click  y extrae la informacion del curso
 function leerDatosCurso(curso) {
-  // console.log(curso);
-
   // Crear un objecto con el contendio del curso actual
   const infoCurso = {
     imagen: curso.querySelector('img').src,
@@ -92,21 +91,53 @@ function carritoHTML() {
   // Recorre el carrito y genera el HMTL
   articulosCarrito.forEach((curso) => {
     const { imagen, titulo, precio, cantidad, id } = curso;
+
+    // Crear nodos
     const row = document.createElement('tr');
-    row.innerHTML = `
-            <td>
-                <img src='${imagen}' width='100' >
-            </td>
-            <td> ${titulo} </td>
-            <td> ${precio} </td>
-            <td> ${cantidad} </td>
-            <td> 
-                <a href='#' class='borrar-curso' data-id='${id}'> X </a>
-            </td>
-            
-        `;
-    // Agregar el HTML del carrito en el tbody
-    contendorCarrito.appendChild(row);
+    const tdImg = document.createElement('td');
+    const tdTitle = document.createElement('td');
+    const tdPrice = document.createElement('td');
+    const tdQty = document.createElement('td');
+    const tdDelete = document.createElement('td');
+
+    const divQty = document.createElement('div');
+    const addQty = document.createElement('button');
+    const lessQty = document.createElement('button');
+    const img = document.createElement('img');
+    const del = document.createElement('a');
+
+    // Agregar contenido
+    img.src = imagen;
+    img.width = 100;
+    tdImg.appendChild(img);
+
+    tdTitle.textContent = titulo;
+    tdPrice.textContent = precio;
+
+    addQty.textContent = '+';
+    addQty.addEventListener('click', () => {
+      addQtyArticle(id);
+    });
+
+    lessQty.textContent = '-';
+    lessQty.addEventListener('click', () => {
+      lessQtyArticle(id);
+    });
+
+    divQty.classList.add('qty');
+    divQty.append(addQty, cantidad, lessQty);
+    tdQty.appendChild(divQty);
+
+    del.href = '#';
+    del.classList.add('borrar-curso');
+    del.dataset.id = id;
+    del.textContent = 'X';
+    tdDelete.appendChild(del);
+
+    // Añadir a la ram pricipal
+    row.append(tdImg, tdTitle, tdPrice, tdQty, tdDelete);
+    fragment.appendChild(row);
+    contendorCarrito.appendChild(fragment);
   });
 
   // Agregar el carrito de compras al storage
@@ -117,19 +148,62 @@ function carritoHTML() {
     totalProducts += articulo.cantidad;
   });
 
-  addCount(totalProducts)
+  addCount(totalProducts);
 }
 
 function sincronizarStorage() {
   localStorage.setItem('carrito', JSON.stringify(articulosCarrito));
 }
 
+// Mostrar cantidad
 function addCount(total) {
-    if(total > 999) {
-        countSpan.textContent = '+999';
-        return 
+  if (total > 999) {
+    countSpan.textContent = '+999';
+    return;
+  }
+  countSpan.textContent = total;
+}
+
+// Añadir un articulo desde el btn
+function addQtyArticle(id) {
+  // Actualizamos la cantidad
+  const cursos = articulosCarrito.map((curso) => {
+    if (curso.id === id) {
+      curso.cantidad++;
+      return curso;
+    } else {
+      return curso;
     }
-    countSpan.textContent = total;
+  });
+  articulosCarrito = [...cursos];
+
+  carritoHTML();
+}
+
+// Eliminar un articulo desde el btn
+function lessQtyArticle(id) {
+  // Eliminar si no tiene cantidad
+  articulosCarrito.map((curso) => {
+    if (curso.cantidad === 0) {
+      articulosCarrito = articulosCarrito.filter((curso) => curso.id !== id);
+      carritoHTML();
+      return
+    }
+  })
+
+  // Actualizamos la cantidad
+  const cursos = articulosCarrito.map((curso) => {
+    if (curso.id === id) {
+      curso.cantidad--;
+      return curso;
+    } else {
+      return curso;
+    }
+  });
+
+  articulosCarrito = [...cursos];
+
+  carritoHTML();
 }
 
 // Elimina los cursos del tbody
